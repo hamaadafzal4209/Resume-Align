@@ -19,7 +19,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        {/* Add a route for the sign-in page */}
         <Route path="/sign-in" element={<SignInPage />} />
       </Routes>
     </BrowserRouter>
