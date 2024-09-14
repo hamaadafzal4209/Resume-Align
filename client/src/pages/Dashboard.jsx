@@ -1,79 +1,106 @@
 import { useState, useRef } from "react";
 import { Container, Row, Col, Card, ListGroup, Button, Alert } from "react-bootstrap";
 import { FaCloudUploadAlt } from "react-icons/fa";
-import { PDFDocument } from 'pdf-lib'; 
-import axios from 'axios'; 
-
-const fileTypes = ["JPG", "PNG", "GIF", "PDF"];
+import pdf from 'pdf-parse';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const Dashboard = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [result, setResult] = useState(null);
+  const [topResumes, setTopResumes] = useState([]); // To store top 5 resumes
   const fileInputRef = useRef(null);
 
-  // Handle file change
+  // Your API key
+  const apiKey = 'AIzaSyACaSGdYOtuaM673cfWwwmq7zdqQTMPyuM';
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-1.5-flash',
+  });
+
+  const generationConfig = {
+    temperature: 1,
+    topP: 0.95,
+    topK: 64,
+    maxOutputTokens: 8192,
+    responseMimeType: 'text/plain',
+  };
+
+  const safetySettings = [
+    {
+      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    },
+    {
+      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+      threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+    },
+  ];
+
   const handleFileChange = (event) => {
     const newFiles = Array.from(event.target.files);
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-    event.target.value = ""; // Clear file input value after selection
+    event.target.value = ""; // Reset file input
   };
 
-  // Remove a file
   const removeFile = (index) => {
     setFiles((prevFiles) => prevFiles.filter((_, i) => i !== index));
   };
 
-  // Trigger file input click
   const handleClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  // Extract text from PDF
   const extractTextFromPDF = async (file) => {
     const arrayBuffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(arrayBuffer);
-    const pages = pdfDoc.getPages();
-    let text = '';
-    for (const page of pages) {
-      const { textContent } = await page.getTextContent();
-      text += textContent.items.map(item => item.str).join(' ') + '\n';
-    }
-    return text;
+    const data = await pdf(arrayBuffer);
+    return data.text;
   };
 
-  // Process files
   const processFiles = async () => {
     setLoading(true);
     setError(null);
-    setResult(null);
+    setTopResumes([]);
 
     try {
       const pdfFiles = files.filter(file => file.type === 'application/pdf');
       const texts = await Promise.all(pdfFiles.map(file => extractTextFromPDF(file)));
-      
-      // Replace 'your-endpoint' with your actual Gemini API endpoint
-      const apiEndpoint = 'https://api.gemini.com/v1/evaluate-resumes'; // Example endpoint
-      const apiKey = 'YOUR_API_KEY'; // Replace with your actual API key
 
-      const responses = await Promise.all(texts.map(text => 
-        axios.post(apiEndpoint, { text }, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        })
-      ));
-      
-      // Process and display results
-      const topResume = responses.map(response => response.data).sort((a, b) => b.score - a.score)[0];
-      setResult(topResume);
+      const responses = await Promise.all(texts.map(text => {
+        const chatSession = model.startChat({
+          generationConfig,
+          safetySettings,
+          history: [],
+        });
+
+        return chatSession.sendMessage(text).then(response => ({
+          text: response.response.text(),
+        }));
+      }));
+
+      // Mock processing of responses
+      const processedResponses = responses.map((response, index) => ({
+        title: pdfFiles[index].name,
+        score: Math.random() * 100 // Mocking the score since we don't know the exact structure
+      }));
+
+      const topFive = processedResponses.sort((a, b) => b.score - a.score).slice(0, 5);
+      setTopResumes(topFive);
 
     } catch (error) {
       setError("An error occurred while processing the files.");
+      console.log(error);
     } finally {
       setLoading(false);
     }
@@ -84,10 +111,9 @@ const Dashboard = () => {
       <Row className="justify-content-center">
         <Col>
           <h2 style={{ textAlign: "center", marginBottom: "20px", color: "#343a40" }}>
-            Upload Your Files
+            Upload Your Resumes
           </h2>
 
-          {/* Custom File Uploader */}
           <div
             onClick={handleClick}
             style={{
@@ -105,18 +131,17 @@ const Dashboard = () => {
           >
             <FaCloudUploadAlt size={40} color="#FD366E" style={{ marginBottom: "10px" }} />
             <p style={{ marginTop: "10px", color: "#6c757d", fontSize: "14px" }}>
-              Drag & drop or click to upload your files (PDF, JPG, PNG, GIF)
+              Drag & drop or click to upload your resumes (PDF format only)
             </p>
             <input
               type="file"
               ref={fileInputRef}
               multiple
               onChange={handleFileChange}
-              style={{ display: "none" }} // Hide the default file input
+              style={{ display: "none" }}
             />
           </div>
 
-          {/* Uploaded Files Display */}
           {files.length > 0 && (
             <Card className="mt-4" style={{ borderRadius: "8px", borderColor: "#FD366E" }}>
               <Card.Header
@@ -162,28 +187,31 @@ const Dashboard = () => {
             </Card>
           )}
 
-          {/* Process Files Button */}
           {files.length > 0 && (
             <Button
               onClick={processFiles}
               disabled={loading}
               style={{ display: "block", margin: "20px auto", backgroundColor: "#FD366E", borderColor: "#FD366E" }}
             >
-              {loading ? "Processing..." : "Process Files"}
+              {loading ? "Processing..." : "Process Resumes"}
             </Button>
           )}
 
-          {/* Display Results */}
-          {result && (
-            <Alert variant="success" className="mt-4">
-              <h4>Top Resume</h4>
-              <p><strong>Title:</strong> {result.title}</p>
-              <p><strong>Score:</strong> {result.score}</p>
-              {/* Display more details as needed */}
-            </Alert>
+          {topResumes.length > 0 && (
+            <Card className="mt-4">
+              <Card.Header style={{ backgroundColor: "#28a745", color: "#fff", textAlign: "center" }}>
+                Top 5 Resumes
+              </Card.Header>
+              <ListGroup variant="flush">
+                {topResumes.map((resume, index) => (
+                  <ListGroup.Item key={index}>
+                    <strong>{index + 1}. {resume.title}</strong> - Score: {resume.score.toFixed(2)}
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </Card>
           )}
 
-          {/* Display Error */}
           {error && (
             <Alert variant="danger" className="mt-4">
               {error}
