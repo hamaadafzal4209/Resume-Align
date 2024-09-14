@@ -21,24 +21,31 @@ function NavComponent() {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ms-auto">
-            <Nav.Link as={Link} to="/" style={{ color: "#343a40" }}>
+            <Nav.Link to="/" style={{ color: "#343a40" }}>
               Home
             </Nav.Link>
             <SignedIn>
-              <Nav.Link as={Link} to="/dashboard" style={{ color: "#343a40" }}>
+              <Nav.Link to="/dashboard" style={{ color: "#343a40" }}>
                 Dashboard
               </Nav.Link>
             </SignedIn>
             <SignedOut>
               <Button
                 variant="primary"
+                size='sm'
                 style={{
                   backgroundColor: "#FD366E",
                   borderColor: "#FD366E",
                   color: "white",
                 }}
               >
-                <SignInButton />
+                <SignInButton 
+                 appearance={{
+                  elements: {
+                    formButtonPrimary: 'none',
+                  },
+                }}
+                 />
               </Button>
             </SignedOut>
             <SignedIn>

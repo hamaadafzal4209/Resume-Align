@@ -14,7 +14,6 @@ const SignInPage = () => {
         width: '100%',
         maxWidth: '400px',
         padding: '20px',
-        borderRadius: '8px',
       }}>
         <SignIn />
       </div>
