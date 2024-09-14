@@ -8,7 +8,7 @@ const Dashboard = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [topResumes, setTopResumes] = useState([]); // To store top 5 resumes
+  const [topResumes, setTopResumes] = useState([]);
   const fileInputRef = useRef(null);
 
   // Your API key
