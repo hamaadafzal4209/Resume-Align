@@ -1,5 +1,6 @@
 import { Container, Row, Col, Button } from 'react-bootstrap';
 import './HeroSection.css'; 
+import { Link } from 'react-router-dom';
 
 const HeroSection = () => {
   return (
@@ -13,13 +14,11 @@ const HeroSection = () => {
             <p className="hero-subheading">
               Optimize and enhance your resumes with our cutting-edge AI tool. Get the best resume for your job search.
             </p>
-            <Button 
-              variant="primary" 
-              size="lg" 
-              href="/dashboard"
-            >
-              Get Started
-            </Button>
+            <Link to="/dashboard">
+              <Button variant="primary" size="lg">
+                Get Started
+              </Button>
+            </Link>
           </Col>
         </Row>
       </Container>

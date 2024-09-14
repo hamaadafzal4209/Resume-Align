@@ -1,6 +1,8 @@
-import FeaturesSection from '../components/FeatureSection'
-import HeroSection from '../components/Hero/Hero'
-import NavComponent from '../components/Navbar'
+import AccordionComponent from '../components/Home/Accordion/Accordion'
+import FeaturesSection from '../components/Home/FeatureSection/FeatureSection'
+import HeroSection from '../components/Home/Hero/Hero'
+import HowItWorksSection from '../components/Home/HowItsWork/HowItsWork'
+import NavComponent from '../components/Layout/Navbar'
 
 const Home = () => {
   return (
@@ -8,6 +10,8 @@ const Home = () => {
       <NavComponent/>
       <HeroSection/>
       <FeaturesSection/>
+      <HowItWorksSection/>
+      <AccordionComponent/>
     </div>
   )
 }
