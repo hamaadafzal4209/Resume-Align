@@ -16,7 +16,7 @@ const HeroSection = () => {
             <Button 
               variant="primary" 
               size="lg" 
-              href="/dashboard" // This will navigate to the dashboard section
+              href="/dashboard"
             >
               Get Started
             </Button>
